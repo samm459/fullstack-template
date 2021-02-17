@@ -1,6 +1,7 @@
 const webpack = require("webpack");
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const FaviconsWebpackPlugin = require("favicons-webpack-plugin");
 
 const config = {
   entry: ["react-hot-loader/patch", "./src/index.tsx"],
@@ -54,6 +55,7 @@ const config = {
     new HtmlWebpackPlugin({
       template: "index.html",
     }),
+    new FaviconsWebpackPlugin("favicon.png"),
   ],
   optimization: {
     runtimeChunk: "single",
