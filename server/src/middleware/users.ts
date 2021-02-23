@@ -1,5 +1,5 @@
 import { Middleware } from "koa";
-import { Authtype } from "src/enums/Authtype";
+import { Authtype } from "../enums/Authtype";
 import { number, object, string } from "joi";
 
 export const index: Middleware = (ctx) => {

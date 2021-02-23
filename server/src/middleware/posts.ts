@@ -1,7 +1,7 @@
 import { Middleware } from "koa";
-import { Authtype } from "src/enums/Authtype";
+import { Authtype } from "../enums/Authtype";
 import { object, string } from "joi";
-import { Post } from "src/db";
+import { Post } from "../db";
 
 export const index: Middleware = async (ctx) => {
   const schema = object({
@@ -10,16 +10,28 @@ export const index: Middleware = async (ctx) => {
     category: string(),
   });
 
-  await schema.validateAsync(ctx.query);
+  try {
+    await schema.validateAsync(ctx.query);
+  } catch {
+    ctx.status = 422;
+    ctx.body = "Invalid query";
+    return;
+  }
 
   const result = await Post.find(ctx.query).limit(100).toArray();
   return result;
 };
 
-export const find: Middleware = () => {
-  // Get by id
-  // await Post.findOne({ _id: "" });
-  // return post
+export const find: Middleware = async (ctx) => {
+  const { id } = ctx.params;
+
+  const schema = string();
+
+  await schema.validateAsync(id);
+
+  // await Post.findOne({ _id: id })
+
+  ctx.body = id;
 };
 
 export const create: Middleware = (ctx) => {
