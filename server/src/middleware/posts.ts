@@ -26,12 +26,17 @@ export const index: Middleware = async (ctx) => {
     }).toArray();
     ctx.status = 200;
     ctx.body = posts;
-    return;
   } else if (ctx.query.category) {
-  } else {
-    const result = await Post.find(ctx.query).limit(100).toArray();
+    const result = await Post.find({
+      category: ctx.query.category as string,
+    }).toArray();
+    ctx.status = 200;
     ctx.body = result;
     return;
+  } else {
+    const result = await Post.find(ctx.query).limit(100).toArray();
+    ctx.status = 200;
+    ctx.body = result;
   }
 };
 
@@ -52,6 +57,8 @@ export const find: Middleware = async (ctx) => {
     ctx.status = 404;
     ctx.body = "This post can not be found.";
   }
+  ctx.status = 200;
+  ctx.body = post;
 };
 
 export const create: Middleware = async (ctx) => {
@@ -68,10 +75,10 @@ export const create: Middleware = async (ctx) => {
   });
   // validate body
   try {
-    await schema.validateAsync(ctx.request.body);
+    await schema.validateAsync(ctx.request.body, { abortEarly: true });
   } catch (err) {
     ctx.status = 422;
-    ctx.body = "Invalid body";
+    ctx.body = err.details[0].message;
     return;
   }
 
