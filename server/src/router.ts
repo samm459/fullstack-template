@@ -14,7 +14,7 @@ router.delete("/users", Users.destroy);
 router.get("/posts", Posts.index);
 router.get("/posts/:id", Posts.find);
 router.post("/posts", Posts.create);
-router.put("/posts", Posts.update);
-router.delete("/posts", Posts.destroy);
+router.put("/posts/:id", Posts.update);
+router.delete("/posts/:id", Posts.destroy);
 
 export const routes = router.routes();

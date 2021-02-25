@@ -5,21 +5,34 @@ import { Post } from "../db";
 
 export const index: Middleware = async (ctx) => {
   const schema = object({
-    title: string(),
-    body: string(),
+    search: string(),
     category: string(),
   });
 
   try {
-    await schema.validateAsync(ctx.query);
-  } catch {
+    await schema.validateAsync(ctx.query, { abortEarly: true });
+  } catch (err) {
     ctx.status = 422;
-    ctx.body = "Invalid query";
+    ctx.body = err.details[0].message;
     return;
   }
 
-  const result = await Post.find(ctx.query).limit(100).toArray();
-  return result;
+  if (ctx.query.search) {
+    const posts = await Post.find({
+      $or: [
+        { title: ctx.query.search as string },
+        { body: ctx.query.search as string },
+      ],
+    }).toArray();
+    ctx.status = 200;
+    ctx.body = posts;
+    return;
+  } else if (ctx.query.category) {
+  } else {
+    const result = await Post.find(ctx.query).limit(100).toArray();
+    ctx.body = result;
+    return;
+  }
 };
 
 export const find: Middleware = async (ctx) => {
@@ -27,40 +40,97 @@ export const find: Middleware = async (ctx) => {
 
   const schema = string();
 
-  await schema.validateAsync(id);
-
-  // await Post.findOne({ _id: id })
-
-  ctx.body = id;
+  try {
+    await schema.validateAsync(id);
+  } catch (err) {
+    ctx.status = 404;
+    ctx.body = "This post can not be found.";
+    return;
+  }
+  const post = await Post.findOne({ _id: id });
+  if (!post) {
+    ctx.status = 404;
+    ctx.body = "This post can not be found.";
+  }
 };
 
-export const create: Middleware = (ctx) => {
+export const create: Middleware = async (ctx) => {
   if (ctx.auth.type !== Authtype.Admin) {
     ctx.status = 401;
     ctx.body = "Unauthorized";
   }
 
+  const schema = object({
+    title: string().required(),
+    body: string().required(),
+    category: string().required(),
+    featuredImage: string().required(),
+  });
   // validate body
+  try {
+    await schema.validateAsync(ctx.request.body);
+  } catch (err) {
+    ctx.status = 422;
+    ctx.body = "Invalid body";
+    return;
+  }
+
   // create post
+  await Post.insertOne(ctx.request.body);
+  ctx.status = 201;
+  ctx.body = "Post created";
 };
 
-export const update: Middleware = (ctx) => {
+export const update: Middleware = async (ctx) => {
   if (ctx.auth.type !== Authtype.Admin) {
     ctx.status = 401;
     ctx.body = "Unauthorized";
   }
 
   // Find post from url
+  const { id } = ctx.params;
   // validate body
-  // create post
+  const schema = object({
+    title: string(),
+    body: string(),
+    category: string(),
+    featuredImage: string(),
+  });
+  try {
+    await schema.validateAsync(ctx.request.body);
+  } catch {
+    ctx.status = 422;
+    ctx.body = "Invalid request body";
+    return;
+  }
+  // update post
+  try {
+    await Post.updateOne({ _id: id }, ctx.request.body);
+  } catch (err) {
+    ctx.status = 404;
+    ctx.body = "Post not found";
+    return;
+  }
+  ctx.status = 200;
+  ctx.body = "Post updated";
 };
 
-export const destroy: Middleware = (ctx) => {
+export const destroy: Middleware = async (ctx) => {
   if (ctx.auth.type !== Authtype.Admin) {
     ctx.status = 401;
     ctx.body = "Unauthorized";
   }
 
   // Find post from url
+  const { id } = ctx.params;
   // delete post
+  try {
+    await Post.deleteOne({ _id: id });
+  } catch (err) {
+    ctx.status = 404;
+    ctx.body = "Post not found";
+    return;
+  }
+  ctx.status = 200;
+  ctx.body = "Post deleted";
 };
